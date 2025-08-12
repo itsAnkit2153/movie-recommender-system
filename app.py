@@ -2,7 +2,6 @@ import streamlit as st
 import pickle
 import pandas as pd
 import requests
-import os
 
 def fetch_poster(movie_id):
     response = requests.get(
@@ -19,49 +18,18 @@ def recommend(movie):
     recommend_movies = []
     recommended_movies_posters = []
     for i in movies_list:
-        movie_id = movies.iloc[i[0]].movie_id
+        movie_id = movies.iloc[i[0]].movie_id  # ✅ get actual movie_id
         recommend_movies.append(movies.iloc[i[0]].title)
-        recommended_movies_posters.append(fetch_poster(movie_id))
+        recommended_movies_posters.append(fetch_poster(movie_id))  # ✅ pass movie_id here
     return recommend_movies, recommended_movies_posters
 
-def download_file_from_google_drive(id, destination):
-    URL = "https://docs.google.com/uc?export=download"
+# Load Data
+movies = pickle.load(open('movies.pkl', 'rb'))  # Full DataFrame
+movies_list = movies['title'].values            # Only titles for dropdown
 
-    session = requests.Session()
+similarity = pickle.load(open('similarity.pkl', 'rb'))
 
-    response = session.get(URL, params={'id': id}, stream=True)
-    token = get_confirm_token(response)
-
-    if token:
-        params = {'id': id, 'confirm': token}
-        response = session.get(URL, params=params, stream=True)
-
-    save_response_content(response, destination)
-
-def get_confirm_token(response):
-    for key, value in response.cookies.items():
-        if key.startswith('download_warning'):
-            return value
-    return None
-
-def save_response_content(response, destination):
-    CHUNK_SIZE = 32768
-
-    with open(destination, "wb") as f:
-        for chunk in response.iter_content(CHUNK_SIZE):
-            if chunk:
-                f.write(chunk)
-
-similarity_path = 'similarity.pkl'
-if not os.path.exists(similarity_path):
-    FILE_ID = '1tPebNwiKYQuGaE5r17cegITiNwJRoPK7'
-    download_file_from_google_drive(FILE_ID, similarity_path)
-
-movies = pickle.load(open('movies.pkl', 'rb'))
-movies_list = movies['title'].values
-
-similarity = pickle.load(open(similarity_path, 'rb'))
-
+# Streamlit UI
 st.title('Movie Recommender System')
 
 selected_movie_name = st.selectbox(
@@ -92,4 +60,4 @@ if st.button('Recommend'):
 
     with col5:
         st.text(names[4])
-        st.image(posters[4])
+        st.image(posters[4])  
